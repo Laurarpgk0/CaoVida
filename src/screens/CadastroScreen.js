@@ -1,16 +1,18 @@
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Keyboard,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Keyboard,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
-export default function App() {
+import ItemLista from "../components/ItemLista";
+
+export default function CadastroScreen() {
   const [petNome, setPetNome] = useState("");
   const [tipoConsulta, setTipoConsulta] = useState("");
   const [dataDaVacina, setDataDaVacina] = useState("");
@@ -19,7 +21,11 @@ export default function App() {
 
   const [vaccines, setVaccines] = useState([
     { id: 1, name: "Vacina Antirrábica", applied: false },
-    { id: 2, name: "Consulta com Doutor Pulga", applied: false },
+    {
+      id: 2,
+      name: "Consulta com Doutor Pulga",
+      applied: false,
+    },
     { id: 3, name: "Consulta Anual", applied: false },
     { id: 4, name: "Vacina V8", applied: false },
   ]);
@@ -30,7 +36,7 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  const markApplied = (id: number) => {
+  const markApplied = (id) => {
     setVaccines((prev) => {
       const item = prev.find((v) => v.id === id);
 
@@ -45,7 +51,7 @@ export default function App() {
     });
   };
 
-  const removeItem = (id: number) => {
+  const removeItem = (id) => {
     setVaccines((prev) => prev.filter((v) => v.id !== id));
   };
 
@@ -53,14 +59,14 @@ export default function App() {
     if (petNome && tipoConsulta && dataDaVacina) {
       const novaConsulta = {
         id: Date.now(),
-        name: `${tipoConsulta} para ${petNome} em ${dataDaVacina}`,
+        name: `${petNome} - ${tipoConsulta} em ${dataDaVacina}`,
         applied: false,
       };
 
       setVaccines((prev) => [novaConsulta, ...prev]);
 
       setMessage(
-        `✅ ${tipoConsulta} para ${petNome} foi marcado para ${dataDaVacina}!`,
+        `✅ A consulta de ${petNome} para ${tipoConsulta} foi marcada para ${dataDaVacina}!`,
       );
 
       setPetNome("");
@@ -125,25 +131,12 @@ export default function App() {
         data={vaccines}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
-          <View style={[styles.item, item.applied && styles.itemApplied]}>
-            <Text style={styles.text}>{item.name}</Text>
-
-            {!item.applied && (
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => markApplied(item.id)}
-              >
-                <Text style={styles.buttonText}>Marcar como aplicada</Text>
-              </TouchableOpacity>
-            )}
-
-            <TouchableOpacity
-              style={styles.removeButton}
-              onPress={() => removeItem(item.id)}
-            >
-              <Text style={styles.buttonText}>Remover</Text>
-            </TouchableOpacity>
-          </View>
+          <ItemLista
+            item={item}
+            styles={styles}
+            markApplied={markApplied}
+            removeItem={removeItem}
+          />
         )}
       />
     </View>
