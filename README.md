@@ -18,18 +18,18 @@ Permite cadastrar nome do pet e data da consulta.
 
 Exibe uma lista de vacinas com interação (marcar como aplicada).
 
-Retorna feedback imediato ao usuário (“✅🐶”).
+Retorna feedback imediato ao usuário.
 
 Interface com identidade própria.
 
 <h1>⚙️ Tecnologias utilizadas</h1>
 React Native + Expo → para desenvolvimento híbrido e rápido.
 
-JavaScript/TypeScript → linguagem principal do app.
+JavaScript → linguagem principal do app.
 
-Componentes nativos (Text, TextInput, TouchableOpacity, ActivityIndicator) → para interface e interação.
+Componentes nativos (ActivityIndicator, FlatList, Keyboard, StyleSheet, Text,TextInput, TouchableOpacity, View,) → para interface e interação.
 
-Hooks do React (useState, useEffect) → para gerenciar estados e adicionei um carregamento inicial.
+Hooks do React (useState, useEffect) → para gerenciar estados e adicionei um carregamento inicial de alguns segundos para iniciar o app.
 
 Estilização com StyleSheet → para identidade visual.
 
