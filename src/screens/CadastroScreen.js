@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    FlatList,
-    Keyboard,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Keyboard,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import ItemLista from "../components/ItemLista";
@@ -18,6 +19,12 @@ export default function CadastroScreen() {
   const [dataDaVacina, setDataDaVacina] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
+  const [racas, setRacas] = useState([]);
+  const [racaLoading, setRacaLoading] = useState(false);
+  const [racaError, setRacaError] = useState("");
+  const [modalRacas, setModalRacas] = useState(false);
+  const [buscaRaca, setBuscaRaca] = useState("");
+  const [racaSelecionada, setRacaSelecionada] = useState("");
 
   const [vaccines, setVaccines] = useState([
     { id: 1, name: "Vacina Antirrábica", applied: false },
@@ -35,6 +42,48 @@ export default function CadastroScreen() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  const buscarRacasAPI = async () => {
+    try {
+      setRacaLoading(true);
+      setRacaError("");
+      const response = await fetch("https://dog.ceo/api/breeds/list/all");
+      if (!response.ok) {
+        throw new Error("Erro ao consultar a API");
+      }
+      const data = await response.json();
+      const listaRacas = [];
+      Object.entries(data.message).forEach(([raca, subracas]) => {
+        const racaFormatada = raca.charAt(0).toUpperCase() + raca.slice(1);
+        if (subracas.length === 0) {
+          listaRacas.push(racaFormatada);
+        } else {
+          subracas.forEach((subraca) => {
+            const subracaFormatada =
+              subraca.charAt(0).toUpperCase() + subraca.slice(1);
+            listaRacas.push(`${subracaFormatada} ${racaFormatada}`);
+          });
+        }
+      });
+      setRacas(listaRacas.sort());
+    } catch (error) {
+      console.log("Erro ao buscar raças:", error);
+      setRacaError("Não foi possível carregar as raças.");
+    } finally {
+      setRacaLoading(false);
+    }
+  };
+  const abrirRacas = () => {
+    setModalRacas(true);
+    if (racas.length === 0) {
+      buscarRacasAPI();
+    }
+  };
+  const selecionarRaca = (raca) => {
+    setRacaSelecionada(raca);
+    setModalRacas(false);
+    setBuscaRaca("");
+  };
 
   const markApplied = (id) => {
     setVaccines((prev) => {
@@ -56,20 +105,24 @@ export default function CadastroScreen() {
   };
 
   const handleRegister = () => {
-    if (petNome && tipoConsulta && dataDaVacina) {
+    if (
+      petNome.trim() &&
+      racaSelecionada &&
+      tipoConsulta.trim() &&
+      dataDaVacina.trim()
+    ) {
       const novaConsulta = {
         id: Date.now(),
-        name: `${petNome} - ${tipoConsulta} em ${dataDaVacina}`,
+        name: `${petNome} - ${racaSelecionada} - ${tipoConsulta} em ${dataDaVacina}`,
         applied: false,
       };
 
       setVaccines((prev) => [novaConsulta, ...prev]);
 
-      setMessage(
-        `✅ A consulta de ${petNome} para ${tipoConsulta} foi marcada para ${dataDaVacina}!`,
-      );
+      setMessage("✅ Consulta cadastrada com sucesso!");
 
       setPetNome("");
+      setRacaSelecionada("");
       setTipoConsulta("");
       setDataDaVacina("");
     } else {
@@ -102,6 +155,12 @@ export default function CadastroScreen() {
         returnKeyType="done"
         onSubmitEditing={Keyboard.dismiss}
       />
+
+      <TouchableOpacity style={styles.input} onPress={abrirRacas}>
+        <Text style={racaSelecionada ? styles.inputText : styles.placeholder}>
+          {racaSelecionada || "Selecionar raça do Pet"}
+        </Text>
+      </TouchableOpacity>
 
       <TextInput
         style={styles.input}
@@ -139,6 +198,69 @@ export default function CadastroScreen() {
           />
         )}
       />
+      <Modal
+        visible={modalRacas}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setModalRacas(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>🐶 Escolha a raça do cachorro</Text>
+
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Pesquisar raça..."
+              placeholderTextColor="#777"
+              value={buscaRaca}
+              onChangeText={setBuscaRaca}
+            />
+
+            {racaLoading && (
+              <View style={styles.racaLoading}>
+                <ActivityIndicator size="large" color="#00b894" />
+
+                <Text>Carregando raças...</Text>
+              </View>
+            )}
+
+            {racaError !== "" && (
+              <Text style={styles.errorText}>{racaError}</Text>
+            )}
+
+            {!racaLoading && racaError === "" && (
+              <FlatList
+                data={racas.filter((raca) =>
+                  raca.toLowerCase().includes(buscaRaca.toLowerCase()),
+                )}
+                keyExtractor={(item, index) => `${item}-${index}`}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={styles.racaItem}
+                    onPress={() => {
+                      setRacaSelecionada(item);
+                      setModalRacas(false);
+                      setBuscaRaca("");
+                    }}
+                  >
+                    <Text style={styles.racaText}>🐕 {item}</Text>
+                  </TouchableOpacity>
+                )}
+                ListEmptyComponent={
+                  <Text style={styles.emptyText}>Nenhuma raça encontrada.</Text>
+                }
+              />
+            )}
+
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setModalRacas(false)}
+            >
+              <Text style={styles.closeButtonText}>Fechar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -241,5 +363,79 @@ const styles = StyleSheet.create({
     backgroundColor: "#d63031",
     padding: 10,
     borderRadius: 5,
+  },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    padding: 20,
+  },
+
+  modalContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    padding: 20,
+    height: "80%",
+  },
+
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 15,
+    color: "#2d3436",
+  },
+
+  searchInput: {
+    borderWidth: 1,
+    borderColor: "#b2bec3",
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 10,
+    color: "#2d3436",
+  },
+
+  racaItem: {
+    paddingVertical: 15,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eeeeee",
+  },
+
+  racaText: {
+    fontSize: 17,
+    color: "#2d3436",
+  },
+
+  racaLoading: {
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 20,
+    gap: 10,
+  },
+
+  errorText: {
+    color: "#d63031",
+    textAlign: "center",
+    margin: 15,
+  },
+
+  emptyText: {
+    textAlign: "center",
+    padding: 20,
+    color: "#777",
+  },
+
+  closeButton: {
+    backgroundColor: "#d63031",
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+
+  closeButtonText: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "bold",
   },
 });
