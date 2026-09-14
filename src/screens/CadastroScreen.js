@@ -35,10 +35,9 @@ export default function CadastroScreen() {
     try {
       const response = await fetch(API_URL);
       const data = await response.json();
-      // Formata os dados para manter o layout da lista
       const listFormatada = data.map((item) => ({
         id: item._id,
-        name: `${item.petNome} - ${item.raca} - ${item.tipoConsulta} em ${item.dataDaVacina}`,
+        name: `${item.petNome} da raça ${item.raca} marcou a consulta ${item.tipoConsulta} para ${item.dataDaVacina}`,
         applied: item.applied,
       }));
       setVaccines(listFormatada);
@@ -148,8 +147,9 @@ export default function CadastroScreen() {
     );
   }
 
-  return (
-    <View style={styles.container}>
+  // Formulário renderizado no topo da lista
+  const renderHeader = () => (
+    <View style={styles.headerContainer}>
       <Text style={styles.title}>🐾 CaoVida</Text>
       <Text style={styles.subtitle}>Controle de vacinas e consultas</Text>
 
@@ -192,10 +192,17 @@ export default function CadastroScreen() {
       {message !== "" && <Text style={styles.message}>{message}</Text>}
 
       <Text style={styles.sectionTitle}>Vacinas e consultas</Text>
+    </View>
+  );
 
+  return (
+    <View style={styles.container}>
       <FlatList
         data={vaccines}
         keyExtractor={(item) => item.id.toString()}
+        ListHeaderComponent={renderHeader}
+        showsVerticalScrollIndicator={true}
+        contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
           <ItemLista
             item={item}
@@ -286,8 +293,14 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 20,
     backgroundColor: "#f0f9f4",
+  },
+  listContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  headerContainer: {
+    marginBottom: 10,
   },
   title: {
     fontSize: 25,
