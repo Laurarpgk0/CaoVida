@@ -39,6 +39,10 @@ Estilização com StyleSheet → para identidade visual.
 <img width="400" height="920" alt="WhatsApp Image 2026-09-03 at 23 20 30" src="https://github.com/user-attachments/assets/014ccdb9-f152-4adc-8435-24a79d5102dd" />
 <img width="400" height="920" alt="WhatsApp Image 2026-09-03 at 23 20 30 (1)" src="https://github.com/user-attachments/assets/f6ee1876-1952-4a38-9982-191f064b138d" />
 
+<img width="400" height="920" alt="aa" src="https://github.com/user-attachments/assets/25df3e27-77e6-4565-9eba-9f5dfaeb6c1d" />
+<img width="400" height="920" alt="aaa" src="https://github.com/user-attachments/assets/85fafc5b-46e8-4ff3-921d-3638d244df2f" />
+
+
 ## Get started
 
 1. Install dependencies
