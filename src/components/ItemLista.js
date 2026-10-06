@@ -1,25 +1,67 @@
-import { Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { AText, useA11y } from "../a11y/Acessibilidade";
 
-export default function ItemLista({ item, styles, markApplied, removeItem }) {
+export default function ItemLista({
+  item,
+  styles: stylesProp,
+  markApplied,
+  removeItem,
+}) {
+  const { cores } = useA11y();
+
   return (
-    <View style={[styles.item, item.applied && styles.itemApplied]}>
-      <Text style={styles.text}>{item.name}</Text>
-
-      {!item.applied && (
-        <TouchableOpacity
-          style={styles.button}
-          onPress={() => markApplied(item.id)}
-        >
-          <Text style={styles.buttonText}>Marcar como aplicada</Text>
-        </TouchableOpacity>
-      )}
+    <View style={stylesProp?.item || styles.item}>
+      {/* Usar AText em vez de Text garante que a cor do texto siga a preferência do tema (cores.texto) */}
+      <AText style={styles.text}>{item.name}</AText>
 
       <TouchableOpacity
-        style={styles.removeButton}
-        onPress={() => removeItem(item.id)}
+        style={[styles.button, { backgroundColor: cores.botaoVerde }]}
+        onPress={() => markApplied(item.id)}
+        accessibilityRole="button"
+        accessibilityLabel="Marcar consulta como aplicada"
       >
-        <Text style={styles.buttonText}>Remover</Text>
+        <AText style={styles.buttonText}>
+          {item.applied ? "Aplicada" : "Marcar como aplicada"}
+        </AText>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.removeButton, { backgroundColor: cores.botaoRemover }]}
+        onPress={() => removeItem(item.id)}
+        accessibilityRole="button"
+        accessibilityLabel="Remover consulta"
+      >
+        <AText style={styles.buttonText}>Remover</AText>
       </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  item: {
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  text: {
+    marginBottom: 12,
+  },
+  button: {
+    padding: 12,
+    borderRadius: 6,
+    minHeight: 48,
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  removeButton: {
+    padding: 12,
+    borderRadius: 6,
+    minHeight: 48,
+    justifyContent: "center",
+  },
+  buttonText: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+});
