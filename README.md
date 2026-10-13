@@ -47,6 +47,7 @@ Visualizar WEB: https://cao-vida.vercel.app/
 
 <img width="960" height="457" alt="aaz" src="https://github.com/user-attachments/assets/7cb160a1-f278-4672-96d4-acc61a3cd2d4" />
 
+<img width="960" height="419" alt="1" src="https://github.com/user-attachments/assets/2b7f7f11-e937-4f44-b63a-2ffe5198d948" />
 
 
 
