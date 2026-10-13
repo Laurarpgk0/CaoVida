@@ -13,6 +13,7 @@ import {
 import { Ajustes, AText, useA11y } from "../a11y/Acessibilidade";
 import Libras from "../a11y/Libras";
 import ItemLista from "../components/ItemLista";
+import { supabase } from "../supabase"; // Importação do Supabase para o logout
 
 const API_URL = "https://caovida-backend.onrender.com/api/consultas";
 
@@ -60,10 +61,21 @@ export default function CadastroScreen() {
     },
   };
 
+  // Substitua a função carregarConsultas antiga por esta:
   const carregarConsultas = async () => {
     try {
-      const response = await fetch(API_URL);
+      // Obtém a sessão atual para pegar o ID do usuário logado
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const userId = session.user.id;
+
+      // Passa o userId como parâmetro para a sua API no Render
+      const response = await fetch(`${API_URL}?userId=${userId}`);
       const data = await response.json();
+
       const listFormatada = data.map((item) => ({
         id: item._id,
         name: `${item.petNome} da raça ${item.raca} marcou a consulta ${item.tipoConsulta} para a data ${item.dataDaVacina}`,
@@ -140,6 +152,23 @@ export default function CadastroScreen() {
     }
   };
 
+  // Função para executar o logout e retornar para a tela de login
+  const handleLogout = async () => {
+    try {
+      // Limpa os estados locais imediatamente para evitar resquícios visuais
+      setVaccines([]);
+      setPetNome("");
+      setRacaSelecionada("");
+      setTipoConsulta("");
+      setDataDaVacina("");
+
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+    } catch (error) {
+      setMessage("❌ Erro ao terminar sessão.");
+    }
+  };
+
   const handleRegister = async () => {
     if (
       petNome.trim() &&
@@ -178,7 +207,7 @@ export default function CadastroScreen() {
     return (
       <View style={[styles.loadingContainer, dynamicStyles.container]}>
         <ActivityIndicator size="large" color={cores.botaoVerde} />
-        <AText style={styles.loadingText}>Carregando CaoVida...</AText>
+        <AText style={styles.loadingText}>Carregando CaoVida... Aguarde</AText>
       </View>
     );
   }
@@ -187,6 +216,18 @@ export default function CadastroScreen() {
     <View style={dynamicStyles.container}>
       <ScrollView contentContainerStyle={styles.listContent}>
         <View style={styles.headerContainer}>
+          {/* Botão de Logout posicionado exatamente ACIMA do ajuste de acessibilidade */}
+          <TouchableOpacity
+            style={[styles.logoutButton, dynamicStyles.removeButton]}
+            onPress={handleLogout}
+            accessibilityRole="button"
+            accessibilityLabel="Sair da conta"
+          >
+            <AText style={styles.logoutButtonText}>
+              🚪 Sair da Conta (Logout)
+            </AText>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[styles.a11yButton, { backgroundColor: cores.botaoVerde }]}
             onPress={() => setModalA11y(true)}
@@ -394,6 +435,18 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 10 },
   listContent: { padding: 20, paddingBottom: 40 },
   headerContainer: { marginBottom: 10 },
+  logoutButton: {
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 10,
+    minHeight: 48,
+    justifyContent: "center",
+  },
+  logoutButtonText: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
   a11yButton: {
     padding: 10,
     borderRadius: 6,
