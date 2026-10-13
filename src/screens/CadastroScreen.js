@@ -177,16 +177,27 @@ export default function CadastroScreen() {
       dataDaVacina.trim()
     ) {
       try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          setMessage("⚠️ Sessão expirada. Faça login novamente.");
+          return;
+        }
+        const userId = session.user.id;
+
         const response = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            userId,
             petNome,
             raca: racaSelecionada,
             tipoConsulta,
             dataDaVacina,
           }),
         });
+
         if (response.ok) {
           setMessage("✅ Consulta cadastrada com sucesso!");
           setPetNome("");
@@ -194,6 +205,11 @@ export default function CadastroScreen() {
           setTipoConsulta("");
           setDataDaVacina("");
           carregarConsultas();
+        } else {
+          const errData = await response.json();
+          setMessage(
+            `❌ Erro: ${errData.error || "Não foi possível cadastrar."}`,
+          );
         }
       } catch (error) {
         setMessage("❌ Erro ao salvar no banco de dados.");
