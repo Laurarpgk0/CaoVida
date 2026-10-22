@@ -11,7 +11,8 @@
     },
     "android": {
       "adaptiveIcon": {},
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.lauragomes10.CaoVida"
     },
     "web": {
       "output": "static"
@@ -19,22 +20,23 @@
     "plugins": [
       "expo-router",
       [
-        "expo-splash-screen",
+        "expo-local-authentication",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
+          "faceIDPermission": "Confirmar sua entrada no aplicativo."
         }
       ],
+
       "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "fefa2ca9-8b96-4944-b576-e89bb85ae27c"
+      }
     }
   }
 }
