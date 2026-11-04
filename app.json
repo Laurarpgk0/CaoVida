@@ -12,7 +12,13 @@
     "android": {
       "adaptiveIcon": {},
       "predictiveBackGestureEnabled": false,
-      "package": "com.lauragomes10.CaoVida"
+      "package": "com.lauragomes10.CaoVida",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "output": "static"
@@ -25,8 +31,17 @@
           "faceIDPermission": "Confirmar sua entrada no aplicativo."
         }
       ],
-
-      "expo-video"
+      [
+        "expo-notifications",
+        {
+          "sounds": [
+            "./src/assets/evento.wav"
+          ]
+        }
+      ],
+      "expo-video",
+      "expo-audio",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -37,6 +52,7 @@
       "eas": {
         "projectId": "fefa2ca9-8b96-4944-b576-e89bb85ae27c"
       }
-    }
+    },
+    "owner": "lauragomes10"
   }
 }

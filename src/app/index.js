@@ -1,8 +1,11 @@
+import { useAudioPlayer } from "expo-audio";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Button,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,12 +14,16 @@ import {
 } from "react-native";
 import { AcessibilidadeProvider } from "../a11y/Acessibilidade";
 import VLibrasWeb from "../a11y/VLibrasWeb";
+import Chat from "../Chat";
+import { registerForPushNotificationsAsync } from "../notifications";
 import CadastroScreen from "../screens/CadastroScreen";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import { SessionProvider, useSession } from "../SessionProvider";
+import { supabase } from "../supabase";
 
-// Tela inicial / Landing Page de boas-vindas
+const audioSource = require("../assets/evento.wav");
+
 function WelcomeScreen({ onNavigateToLogin }) {
   return (
     <SafeAreaView style={styles.welcomeContainer}>
@@ -39,10 +46,41 @@ function WelcomeScreen({ onNavigateToLogin }) {
   );
 }
 
-// Gate Principal que envolve a navegação privada e protege os componentes
 function MainGate() {
   const { session, loading, resetInactivityTimer } = useSession();
-  const [currentView, setCurrentView] = useState("welcome"); // 'welcome' | 'login' | 'register'
+  const [currentView, setCurrentView] = useState("welcome");
+
+  const [rooms, setRooms] = useState([]);
+  const [roomId, setRoomId] = useState(null);
+  const [feedback, setFeedback] = useState("");
+
+  const player = useAudioPlayer(audioSource);
+
+  useEffect(() => {
+    if (session) {
+      registerForPushNotificationsAsync();
+
+      // Busca as salas do Supabase assim que o usuário estiver logado
+      async function loadRooms() {
+        const { data, error } = await supabase.from("rooms").select("*");
+        if (error) {
+          setFeedback(error.message);
+        } else {
+          setRooms(data);
+        }
+      }
+      loadRooms();
+    }
+  }, [session]);
+
+  const handlePlaySound = async () => {
+    try {
+      player.seekTo(0);
+      player.play();
+    } catch (error) {
+      console.error("Erro ao reproduzir o som:", error);
+    }
+  };
 
   // Mostra indicador enquanto valida o estado inicial da sessão
   if (loading) {
@@ -54,7 +92,6 @@ function MainGate() {
     );
   }
 
-  // SE O USUÁRIO FOR NULO: Desmonta os componentes privados e exibe o fluxo público (Login/Welcome)
   if (!session) {
     return (
       <TouchableWithoutFeedback onPress={resetInactivityTimer}>
@@ -82,13 +119,54 @@ function MainGate() {
     );
   }
 
-  // SE O USUÁRIO ESTIVER AUTENTICADO: Renderiza estritamente as telas privadas protegidas pelo SessionProvider
+  if (roomId) {
+    return (
+      <View
+        style={{ flex: 1, padding: 20, paddingTop: 48 }}
+        onTouchStart={resetInactivityTimer}
+      >
+        <Button title="Voltar ao menu" onPress={() => setRoomId(null)} />
+        <Chat roomId={roomId} onSent={handlePlaySound} />
+        <VLibrasWeb />
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flex: 1 }} onTouchStart={resetInactivityTimer}>
+    <ScrollView
+      contentContainerStyle={{ padding: 24, gap: 14, paddingTop: 48 }}
+      onTouchStart={resetInactivityTimer}
+    >
       <StatusBar style="dark" />
       <CadastroScreen />
+
+      {feedback ? <Text style={{ color: "red" }}>{feedback}</Text> : null}
+
+      <Text style={{ fontSize: 18, fontWeight: "bold", marginTop: 10 }}>
+        Salas de Atendimento (Aula 5)
+      </Text>
+
+      {/* Lista as salas vindas do banco para o usuário abrir o chat */}
+      {rooms.map((room) => (
+        <Button
+          key={room.id}
+          title={`Abrir ${room.name}`}
+          onPress={() => setRoomId(room.id)}
+          color="#3182ce"
+        />
+      ))}
+
+      {/* Botão de exemplo flutuante ou integrado para testar o som do evento */}
+      <View style={styles.soundButtonContainer}>
+        <Button
+          title="🔊 Tocar Som de Evento"
+          onPress={handlePlaySound}
+          color="#718096"
+        />
+      </View>
+
       <VLibrasWeb />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -154,5 +232,11 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  soundButtonContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#e2e8f0",
   },
 });
