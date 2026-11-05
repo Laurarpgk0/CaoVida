@@ -1,4 +1,4 @@
-import { useAudioPlayer } from "expo-audio";
+import { Audio } from "expo-av";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import {
@@ -21,8 +21,6 @@ import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
 import { SessionProvider, useSession } from "../SessionProvider";
 import { supabase } from "../supabase";
-
-const audioSource = require("../assets/evento.wav");
 
 function WelcomeScreen({ onNavigateToLogin }) {
   return (
@@ -54,8 +52,6 @@ function MainGate() {
   const [roomId, setRoomId] = useState(null);
   const [feedback, setFeedback] = useState("");
 
-  const player = useAudioPlayer(audioSource);
-
   useEffect(() => {
     if (session) {
       registerForPushNotificationsAsync();
@@ -73,16 +69,22 @@ function MainGate() {
     }
   }, [session]);
 
+  // Função robusta usando expo-av compatível com Web e Mobile
   const handlePlaySound = async () => {
     try {
-      // Tenta reiniciar e reproduzir utilizando o player atual
-      player.seekTo(0);
-      player.play();
-    } catch (error) {
-      console.log(
-        "Erro ao reproduzir com o player, tentando recriar...",
-        error,
+      const { sound } = await Audio.Sound.createAsync(
+        require("../assets/evento.wav"),
       );
+      await sound.playAsync();
+
+      // Limpa a memória após o som terminar de tocar
+      sound.setOnPlaybackStatusUpdate(async (status) => {
+        if (status.didJustFinish) {
+          await sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.log("Erro ao reproduzir o som:", error);
     }
   };
 
@@ -163,7 +165,7 @@ function MainGate() {
       {/* Botão de exemplo flutuante ou integrado para testar o som do evento */}
       <View style={styles.soundButtonContainer}>
         <Button
-          title="🔊 Tocar Som de Evento"
+          title="TOCAR SOM DE EVENTO🐶"
           onPress={handlePlaySound}
           color="#718096"
         />
