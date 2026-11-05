@@ -1,15 +1,14 @@
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { supabase } from "../supabase";
 
@@ -19,16 +18,22 @@ export default function RegisterScreen({ onBackToLogin }) {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Estados para controlar as mensagens no ecrã
+  const [mensagemSucesso, setMensagemSucesso] = useState("");
+  const [mensagemErro, setMensagemErro] = useState("");
+
   const handleRegister = async () => {
+    setMensagemSucesso("");
+    setMensagemErro("");
+
     if (!name || !email || !password) {
-      Alert.alert("Atenção", "Por favor, preencha todos os campos.");
+      setMensagemErro("Por favor, preencha todos os campos.");
       return;
     }
 
     try {
       setLoading(true);
 
-      // Cria a conta no Supabase Auth e envia o e-mail de confirmação
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
@@ -39,23 +44,20 @@ export default function RegisterScreen({ onBackToLogin }) {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        // Se o Supabase der erro (ex: e-mail já existe, senha curta), mostra na tela
+        setMensagemErro(error.message);
+        return;
+      }
 
-      // Alerta informativo solicitando que o utilizador verifique a caixa de entrada
-      Alert.alert(
-        "Conta Criada com Sucesso! ✉️",
-        "Enviamos um link de confirmação para o seu e-mail. Por favor, verifique a sua caixa de entrada (e a pasta de spam) para confirmar a conta antes de fazer login.",
-        [
-          {
-            text: "OK, ir para o Login",
-            onPress: () => {
-              if (onBackToLogin) onBackToLogin();
-            },
-          },
-        ],
+      // FORÇAR A EXIBIÇÃO DA MENSAGEM DE SUCESSO NA TELA DA VERCEL:
+      setMensagemSucesso(
+        "Conta criada com sucesso! ✉️ Enviamos um link de confirmação para o seu e-mail (" +
+          email +
+          "). Verifique a sua caixa de entrada e a pasta de spam.",
       );
-    } catch (error) {
-      Alert.alert("Erro ao Cadastrar", error.message);
+    } catch (err) {
+      setMensagemErro("Ocorreu um erro inesperado: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -72,6 +74,30 @@ export default function RegisterScreen({ onBackToLogin }) {
           <Text style={styles.subtitle}>
             Preencha para começar a gerenciar seus pets
           </Text>
+
+          {/* CAIXA DE SUCESSO: Aparece logo abaixo do subtítulo quando cadastrado com sucesso */}
+          {mensagemSucesso ? (
+            <View style={styles.successBox}>
+              <Text style={styles.successText}>{mensagemSucesso}</Text>
+              {onBackToLogin && (
+                <TouchableOpacity
+                  style={styles.linkButton}
+                  onPress={onBackToLogin}
+                >
+                  <Text style={styles.linkButtonText}>
+                    Ir para o Login agora
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : null}
+
+          {/* CAIXA DE ERRO: Caso ocorra algum problema */}
+          {mensagemErro ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{mensagemErro}</Text>
+            </View>
+          ) : null}
 
           <Text style={styles.label}>Nome Completo</Text>
           <TextInput
@@ -115,7 +141,7 @@ export default function RegisterScreen({ onBackToLogin }) {
             )}
           </TouchableOpacity>
 
-          {onBackToLogin && (
+          {onBackToLogin && !mensagemSucesso && (
             <TouchableOpacity
               style={styles.secondaryButton}
               onPress={onBackToLogin}
@@ -159,6 +185,47 @@ const styles = StyleSheet.create({
     color: "#718096",
     textAlign: "center",
     marginBottom: 24,
+  },
+  successBox: {
+    backgroundColor: "#c6f6d5",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#9ae6b4",
+  },
+  successText: {
+    color: "#22543d",
+    fontSize: 14,
+    textAlign: "center",
+    fontWeight: "600",
+    lineHeight: 20,
+  },
+  errorBox: {
+    backgroundColor: "#fed7d7",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#feb2b2",
+  },
+  errorText: {
+    color: "#742a2a",
+    fontSize: 14,
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  linkButton: {
+    marginTop: 12,
+    alignItems: "center",
+    backgroundColor: "#22543d",
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  linkButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
   },
   label: { fontSize: 14, fontWeight: "600", color: "#4a5568", marginBottom: 6 },
   input: {

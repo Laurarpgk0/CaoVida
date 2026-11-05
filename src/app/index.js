@@ -143,7 +143,7 @@ function MainGate() {
       {feedback ? <Text style={{ color: "red" }}>{feedback}</Text> : null}
 
       <Text style={{ fontSize: 18, fontWeight: "bold", marginTop: 10 }}>
-        Salas de Atendimento (Aula 5)
+        {/* Salas de Atendimento (Aula 5) */}
       </Text>
 
       {/* Lista as salas vindas do banco para o usuário abrir o chat */}
