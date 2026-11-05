@@ -75,10 +75,14 @@ function MainGate() {
 
   const handlePlaySound = async () => {
     try {
+      // Tenta reiniciar e reproduzir utilizando o player atual
       player.seekTo(0);
       player.play();
     } catch (error) {
-      console.error("Erro ao reproduzir o som:", error);
+      console.log(
+        "Erro ao reproduzir com o player, tentando recriar...",
+        error,
+      );
     }
   };
 
