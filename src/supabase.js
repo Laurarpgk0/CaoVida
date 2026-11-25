@@ -1,12 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import "react-native-url-polyfill/auto";
+import { SUPABASE_KEY, SUPABASE_URL } from "./config";
 
-const SUPABASE_URL = "https://xjggzfxupoqtaoqsbldt.supabase.co";
-
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_aLnPRB6ZyGxM5qgnqWeFAg_urn44JF5";
-
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: {
     persistSession: false,
     autoRefreshToken: true,

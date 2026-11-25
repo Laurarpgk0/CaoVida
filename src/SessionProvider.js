@@ -1,12 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as LocalAuthentication from "expo-local-authentication";
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { AppState } from "react-native";
 import { supabase } from "./supabase";
 
@@ -18,9 +12,8 @@ export const SessionProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const inactivityTimer = useRef(null);
-  const INACTIVITY_LIMIT = 120000; // 2 minutos
+  const INACTIVITY_LIMIT = 120000;
 
-  // Variáveis de controle nativo (para evitar falsos positivos de background/inactive)
   const nativePrompt = useRef(false);
   const backgroundDuringPrompt = useRef(false);
 
@@ -41,7 +34,7 @@ export const SessionProvider = ({ children }) => {
     }, INACTIVITY_LIMIT);
   };
 
-  // Função para ativar ou desativar a biometria por conta e aparelho (native:UUID)
+  // Função para ativar ou desativar a biometria por conta e aparelho
   const enableNative = async (enabled) => {
     if (!session?.user) return;
     if (enabled) {
@@ -71,7 +64,6 @@ export const SessionProvider = ({ children }) => {
     await AsyncStorage.setItem("native:" + session.user.id, String(enabled));
   };
 
-  // Interceptação de login com suporte opcional à biometria se habilitada
   const loginWithBiometrics = async (email, password) => {
     try {
       setLoading(true);

@@ -13,9 +13,22 @@ import {
 import { Ajustes, AText, useA11y } from "../a11y/Acessibilidade";
 import Libras from "../a11y/Libras";
 import ItemLista from "../components/ItemLista";
-import { supabase } from "../supabase"; // Importação do Supabase para o logout
+import { API_URL } from "../config";
+import { supabase } from "../supabase";
 
-const API_URL = "https://caovida-backend.onrender.com/api/consultas";
+const authFetch = async (url, options = {}) => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session) throw new Error("Sem sessão");
+  return fetch(url, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      Authorization: `Bearer ${session.access_token}`,
+    },
+  });
+};
 
 export default function CadastroScreen() {
   const { p, cores } = useA11y();
@@ -61,27 +74,18 @@ export default function CadastroScreen() {
     },
   };
 
-  // Substitua a função carregarConsultas antiga por esta:
   const carregarConsultas = async () => {
     try {
-      // Obtém a sessão atual para pegar o ID do usuário logado
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const userId = session.user.id;
-
-      // Passa o userId como parâmetro para a sua API no Render
-      const response = await fetch(`${API_URL}?userId=${userId}`);
+      const response = await authFetch(API_URL);
+      if (!response.ok) throw new Error("Falha na API");
       const data = await response.json();
-
-      const listFormatada = data.map((item) => ({
-        id: item._id,
-        name: `${item.petNome} da raça ${item.raca} marcou a consulta ${item.tipoConsulta} para a data ${item.dataDaVacina}`,
-        applied: item.applied,
-      }));
-      setVaccines(listFormatada);
+      setVaccines(
+        data.map((item) => ({
+          id: item._id,
+          name: `${item.petNome} da raça ${item.raca} marcou a consulta ${item.tipoConsulta} para a data ${item.dataDaVacina}`,
+          applied: item.applied,
+        })),
+      );
     } catch (error) {
       setMessage("❌ Erro ao carregar dados do servidor.");
     } finally {
@@ -132,10 +136,8 @@ export default function CadastroScreen() {
 
   const markApplied = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, { method: "PATCH" });
-      if (response.ok) {
-        carregarConsultas();
-      }
+      const response = await authFetch(`${API_URL}/${id}`, { method: "PATCH" });
+      if (response.ok) carregarConsultas();
     } catch (error) {
       setMessage("❌ Erro ao atualizar status.");
     }
@@ -143,19 +145,17 @@ export default function CadastroScreen() {
 
   const removeItem = async (id) => {
     try {
-      const response = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      if (response.ok) {
-        carregarConsultas();
-      }
+      const response = await authFetch(`${API_URL}/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) carregarConsultas();
     } catch (error) {
       setMessage("❌ Erro ao remover item.");
     }
   };
 
-  // Função para executar o logout e retornar para a tela de login
   const handleLogout = async () => {
     try {
-      // Limpa os estados locais imediatamente para evitar resquícios visuais
       setVaccines([]);
       setPetNome("");
       setRacaSelecionada("");
@@ -177,20 +177,10 @@ export default function CadastroScreen() {
       dataDaVacina.trim()
     ) {
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (!session) {
-          setMessage("⚠️ Sessão expirada. Faça login novamente.");
-          return;
-        }
-        const userId = session.user.id;
-
-        const response = await fetch(API_URL, {
+        const response = await authFetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            userId,
             petNome,
             raca: racaSelecionada,
             tipoConsulta,
