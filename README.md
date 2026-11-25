@@ -35,6 +35,7 @@ Hooks do React (useState, useEffect) → para gerenciar estados e adicionei um c
 Estilização com StyleSheet → para identidade visual.
 
 Visualizar WEB: https://cao-vida.vercel.app/
+
 Download APK: https://expo.dev/artifacts/eas/2DEyRc-xRF9Yc6G4ny3N0IWcFGLJzEHdqPe6CcvUg24.apk
 
 <img width="400" height="920" alt="WhatsApp Image 2026-08-26 at 15 46 52" src="https://github.com/user-attachments/assets/297187e0-2b08-4057-869e-e9d096f863b9" 
