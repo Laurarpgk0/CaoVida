@@ -10,29 +10,29 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../supabase";
+import { useSession } from "../SessionProvider";
 
 export default function LoginScreen({ onBack, onNavigateToRegister }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const { loginWithBiometrics } = useSession();
+
   const handleLogin = async () => {
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       Alert.alert("Erro", "Por favor, preencha o e-mail e a senha.");
       return;
     }
 
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: password,
-      });
-
-      if (error) throw error;
+      await loginWithBiometrics(email.trim(), password);
     } catch (error) {
-      Alert.alert("Falha no Login", error.message);
+      Alert.alert(
+        "Falha no Login",
+        error.message || "Não foi possível entrar no aplicativo.",
+      );
     } finally {
       setLoading(false);
     }
@@ -45,8 +45,9 @@ export default function LoginScreen({ onBack, onNavigateToRegister }) {
     >
       <View style={styles.formContainer}>
         <Text style={styles.title}>CãoVida 🐾</Text>
+
         <Text style={styles.subtitle}>
-          Entre para gerenciar a vacina e consulta do seu pet
+          Entre para gerenciar as vacinas e consultas do seu pet
         </Text>
 
         <TextInput
@@ -68,7 +69,6 @@ export default function LoginScreen({ onBack, onNavigateToRegister }) {
           secureTextEntry
         />
 
-        {/* 1º Botão: Entrar */}
         <TouchableOpacity
           style={styles.button}
           onPress={handleLogin}
@@ -81,7 +81,6 @@ export default function LoginScreen({ onBack, onNavigateToRegister }) {
           )}
         </TouchableOpacity>
 
-        {/* 2º Botão: Criar Novo Cadastro (Abaixo do Entrar) */}
         {onNavigateToRegister && (
           <TouchableOpacity
             style={styles.registerButton}
@@ -91,7 +90,6 @@ export default function LoginScreen({ onBack, onNavigateToRegister }) {
           </TouchableOpacity>
         )}
 
-        {/* 3º Botão: Voltar ao Início (Abaixo do Criar Cadastro) */}
         {onBack && (
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <Text style={styles.backButtonText}>Voltar ao início</Text>

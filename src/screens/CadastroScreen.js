@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Network from "expo-network";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -10,17 +12,28 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSession } from "../SessionProvider";
 import { Ajustes, AText, useA11y } from "../a11y/Acessibilidade";
 import Libras from "../a11y/Libras";
 import ItemLista from "../components/ItemLista";
 import { API_URL } from "../config";
+import { enviarNotificacaoLocal } from "../notifications";
+import {
+  createOperationId,
+  formatConsulta,
+  loadOfflineState,
+  saveOfflineState,
+  syncOfflineQueue,
+} from "../offlineConsultas";
 import { supabase } from "../supabase";
 
 const authFetch = async (url, options = {}) => {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+
   if (!session) throw new Error("Sem sessão");
+
   return fetch(url, {
     ...options,
     headers: {
@@ -32,6 +45,9 @@ const authFetch = async (url, options = {}) => {
 
 export default function CadastroScreen() {
   const { p, cores } = useA11y();
+  const { session, signOut } = useSession();
+  const userId = session?.user?.id;
+
   const [petNome, setPetNome] = useState("");
   const [tipoConsulta, setTipoConsulta] = useState("");
   const [dataDaVacina, setDataDaVacina] = useState("");
@@ -45,6 +61,9 @@ export default function CadastroScreen() {
   const [buscaRaca, setBuscaRaca] = useState("");
   const [racaSelecionada, setRacaSelecionada] = useState("");
   const [vaccines, setVaccines] = useState([]);
+  const [syncMessage, setSyncMessage] = useState("Verificando conexão...");
+
+  const syncingRef = useRef(false);
 
   const dynamicStyles = {
     container: { flex: 1, backgroundColor: cores.fundo },
@@ -64,7 +83,9 @@ export default function CadastroScreen() {
       borderColor: cores.borda,
       borderWidth: p.tema === "escuro" ? 1 : 0,
     },
-    divider: { borderBottomColor: p.tema === "escuro" ? "#444444" : "#D8D4CC" },
+    divider: {
+      borderBottomColor: p.tema === "escuro" ? "#444444" : "#D8D4CC",
+    },
     modal: { backgroundColor: cores.inputFundo },
     button: { backgroundColor: cores.botaoVerde },
     removeButton: { backgroundColor: cores.botaoRemover },
@@ -74,54 +95,202 @@ export default function CadastroScreen() {
     },
   };
 
-  const carregarConsultas = async () => {
+  const sincronizarPendencias = async () => {
+    if (!userId || !session?.access_token || syncingRef.current) return;
+
+    const network = await Network.getNetworkStateAsync();
+
+    if (!network.isConnected || network.isInternetReachable === false) {
+      setSyncMessage("Sem internet. Alterações salvas no aparelho.");
+      return;
+    }
+
+    syncingRef.current = true;
+    setSyncMessage("Sincronizando alterações...");
+
     try {
-      const response = await authFetch(API_URL);
-      if (!response.ok) throw new Error("Falha na API");
-      const data = await response.json();
-      setVaccines(
-        data.map((item) => ({
-          id: item._id,
-          name: `${item.petNome} da raça ${item.raca} marcou a consulta ${item.tipoConsulta} para a data ${item.dataDaVacina}`,
-          applied: item.applied,
-        })),
+      const result = await syncOfflineQueue(
+        userId,
+        session.access_token,
+        API_URL,
+        (state) => {
+          setVaccines(state.consultas.map(formatConsulta));
+        },
+      );
+
+      setSyncMessage(
+        result.queue.length === 0
+          ? "Consultas sincronizadas."
+          : "Existem alterações aguardando sincronização.",
       );
     } catch (error) {
-      setMessage("❌ Erro ao carregar dados do servidor.");
+      console.log("Erro na sincronização:", error.message);
+      setSyncMessage("Falha na sincronização. Tentaremos novamente.");
+    } finally {
+      syncingRef.current = false;
+    }
+  };
+
+  const carregarConsultas = async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const localState = await loadOfflineState(userId);
+
+      setVaccines(localState.consultas.map(formatConsulta));
+
+      const network = await Network.getNetworkStateAsync();
+
+      if (!network.isConnected || network.isInternetReachable === false) {
+        setSyncMessage("Sem internet. Consultas disponíveis no aparelho.");
+        return;
+      }
+
+      const response = await authFetch(API_URL);
+
+      if (!response.ok) {
+        throw new Error(`Erro HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      const deletedIds = new Set(
+        localState.queue
+          .filter((operation) => operation.type === "delete")
+          .map((operation) => operation.targetId),
+      );
+
+      const pendingIds = new Set(
+        localState.queue
+          .filter((operation) => operation.type !== "delete")
+          .flatMap((operation) => [operation.localId, operation.targetId])
+          .filter(Boolean),
+      );
+
+      const pendingItems = localState.consultas.filter((item) =>
+        pendingIds.has(item.id),
+      );
+
+      const remoteItems = data
+        .filter((item) => !deletedIds.has(item._id))
+        .map((item) =>
+          formatConsulta({
+            ...item,
+            syncStatus: "synced",
+          }),
+        );
+
+      const merged = [
+        ...pendingItems,
+        ...remoteItems.filter(
+          (remote) => !pendingItems.some((local) => local.id === remote.id),
+        ),
+      ];
+
+      const updatedState = {
+        consultas: merged,
+        queue: localState.queue,
+      };
+
+      await saveOfflineState(userId, updatedState);
+      setVaccines(merged.map(formatConsulta));
+      setMessage("");
+
+      if (updatedState.queue.length > 0) {
+        await sincronizarPendencias();
+      } else {
+        setSyncMessage("Consultas sincronizadas.");
+      }
+    } catch (error) {
+      console.log("Erro ao carregar consultas:", error.message);
+      setSyncMessage("Não foi possível atualizar pela internet.");
+      setMessage("Exibindo os dados disponíveis no aparelho.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+
     carregarConsultas();
-  }, []);
+
+    const subscription = Network.addNetworkStateListener((state) => {
+      if (state.isConnected && state.isInternetReachable !== false) {
+        carregarConsultas();
+      } else {
+        setSyncMessage("Sem internet. Alterações salvas no aparelho.");
+      }
+    });
+
+    return () => subscription.remove();
+  }, [userId]);
 
   const buscarRacasAPI = async () => {
+    const chaveRacas = "caovida:racas:cachorro:v1";
+
     try {
       setRacaLoading(true);
       setRacaError("");
+
+      const salvas = await AsyncStorage.getItem(chaveRacas);
+
+      if (salvas) {
+        const listaSalva = JSON.parse(salvas);
+
+        if (Array.isArray(listaSalva) && listaSalva.length > 0) {
+          setRacas(listaSalva);
+        }
+      }
+
       const response = await fetch("https://dog.ceo/api/breeds/list/all");
+
       if (!response.ok) {
         throw new Error("Erro ao consultar a API");
       }
+
       const data = await response.json();
       const listaRacas = [];
+
       Object.entries(data.message).forEach(([raca, subracas]) => {
         const racaFormatada = raca.charAt(0).toUpperCase() + raca.slice(1);
+
         if (subracas.length === 0) {
           listaRacas.push(racaFormatada);
         } else {
           subracas.forEach((subraca) => {
             const subracaFormatada =
               subraca.charAt(0).toUpperCase() + subraca.slice(1);
+
             listaRacas.push(`${subracaFormatada} ${racaFormatada}`);
           });
         }
       });
-      setRacas(listaRacas.sort());
+
+      const listaOrdenada = listaRacas.sort();
+
+      await AsyncStorage.setItem(chaveRacas, JSON.stringify(listaOrdenada));
+
+      setRacas(listaOrdenada);
+      setRacaError("");
     } catch (error) {
-      setRacaError("Não foi possível carregar as raças.");
+      const salvas = await AsyncStorage.getItem(chaveRacas);
+
+      if (salvas) {
+        const listaSalva = JSON.parse(salvas);
+        setRacas(listaSalva);
+        setRacaError("");
+      } else {
+        setRacaError(
+          "Sem internet e sem raças salvas. Conecte-se à internet uma vez para baixar a lista.",
+        );
+      }
     } finally {
       setRacaLoading(false);
     }
@@ -129,83 +298,253 @@ export default function CadastroScreen() {
 
   const abrirRacas = () => {
     setModalRacas(true);
+
     if (racas.length === 0) {
       buscarRacasAPI();
     }
   };
 
   const markApplied = async (id) => {
+    if (!userId) return;
+
     try {
-      const response = await authFetch(`${API_URL}/${id}`, { method: "PATCH" });
-      if (response.ok) carregarConsultas();
+      const state = await loadOfflineState(userId);
+      const item = state.consultas.find((consulta) => consulta.id === id);
+
+      if (!item) return;
+
+      const createOperation = state.queue.find(
+        (operation) => operation.type === "create" && operation.localId === id,
+      );
+
+      item.applied = true;
+      item.syncStatus = "pending";
+
+      if (createOperation) {
+        createOperation.data.applied = true;
+      } else {
+        state.queue = state.queue.filter(
+          (operation) =>
+            !(operation.type === "update" && operation.targetId === id),
+        );
+
+        state.queue.push({
+          id: createOperationId(),
+          type: "update",
+          targetId: id,
+          baseUpdatedAt: item.updatedAt || null,
+          data: {
+            petNome: item.petNome,
+            raca: item.raca,
+            tipoConsulta: item.tipoConsulta,
+            dataDaVacina: item.dataDaVacina,
+            applied: true,
+          },
+        });
+      }
+
+      await saveOfflineState(userId, state);
+      setVaccines(state.consultas.map(formatConsulta));
+      setSyncMessage("Alteração aguardando sincronização.");
+
+      await sincronizarPendencias();
     } catch (error) {
-      setMessage("❌ Erro ao atualizar status.");
+      console.log("Erro ao atualizar consulta:", error.message);
+      setMessage("Não foi possível atualizar a consulta.");
+    }
+  };
+
+  const resolverConflitoServidor = async (id) => {
+    if (!userId) return;
+
+    try {
+      const state = await loadOfflineState(userId);
+      const item = state.consultas.find((consulta) => consulta.id === id);
+
+      if (!item?.serverVersion) return;
+
+      state.consultas = state.consultas.map((consulta) =>
+        consulta.id === id
+          ? formatConsulta({
+              ...item.serverVersion,
+              syncStatus: "synced",
+            })
+          : consulta,
+      );
+
+      state.queue = state.queue.filter(
+        (operation) =>
+          !(operation.type === "update" && operation.targetId === id),
+      );
+
+      await saveOfflineState(userId, state);
+      setVaccines(state.consultas.map(formatConsulta));
+      setSyncMessage("Versão do servidor mantida.");
+    } catch (error) {
+      console.log("Erro ao resolver conflito:", error.message);
+      setMessage("Não foi possível manter a versão do servidor.");
+    }
+  };
+
+  const resolverConflitoLocal = async (id) => {
+    if (!userId) return;
+
+    try {
+      const state = await loadOfflineState(userId);
+
+      const item = state.consultas.find((consulta) => consulta.id === id);
+
+      const operation = state.queue.find(
+        (op) => op.type === "update" && op.targetId === id,
+      );
+
+      if (!item?.serverVersion || !operation) return;
+
+      operation.baseUpdatedAt = item.serverVersion.updatedAt || null;
+      delete operation.status;
+      delete item.serverVersion;
+
+      item.syncStatus = "pending";
+
+      await saveOfflineState(userId, state);
+      setVaccines(state.consultas.map(formatConsulta));
+      setSyncMessage("Enviando sua versão para o servidor...");
+
+      await sincronizarPendencias();
+    } catch (error) {
+      console.log("Erro ao resolver conflito:", error.message);
+      setMessage("Não foi possível reenviar sua versão.");
     }
   };
 
   const removeItem = async (id) => {
+    if (!userId) return;
+
     try {
-      const response = await authFetch(`${API_URL}/${id}`, {
-        method: "DELETE",
-      });
-      if (response.ok) carregarConsultas();
+      const state = await loadOfflineState(userId);
+
+      const createOperation = state.queue.find(
+        (operation) => operation.type === "create" && operation.localId === id,
+      );
+
+      if (createOperation) {
+        state.queue = state.queue.filter(
+          (operation) => operation.localId !== id && operation.targetId !== id,
+        );
+      } else {
+        state.queue = state.queue.filter(
+          (operation) =>
+            !(operation.type === "update" && operation.targetId === id),
+        );
+
+        state.queue.push({
+          id: createOperationId(),
+          type: "delete",
+          targetId: id,
+        });
+      }
+
+      state.consultas = state.consultas.filter((item) => item.id !== id);
+
+      await saveOfflineState(userId, state);
+      setVaccines(state.consultas.map(formatConsulta));
+      setSyncMessage("Exclusão aguardando sincronização.");
+
+      await sincronizarPendencias();
     } catch (error) {
-      setMessage("❌ Erro ao remover item.");
+      console.log("Erro ao remover consulta:", error.message);
+      setMessage("Não foi possível remover a consulta.");
     }
   };
 
   const handleLogout = async () => {
     try {
+      await signOut();
+
       setVaccines([]);
       setPetNome("");
       setRacaSelecionada("");
       setTipoConsulta("");
       setDataDaVacina("");
-
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      setMessage("");
     } catch (error) {
-      setMessage("❌ Erro ao terminar sessão.");
+      console.error("Erro ao terminar sessão:", error.message);
+      setMessage(error.message || "Erro ao terminar sessão.");
     }
   };
 
   const handleRegister = async () => {
     if (
-      petNome.trim() &&
-      racaSelecionada &&
-      tipoConsulta.trim() &&
-      dataDaVacina.trim()
+      !petNome.trim() ||
+      !racaSelecionada ||
+      !tipoConsulta.trim() ||
+      !dataDaVacina.trim()
     ) {
-      try {
-        const response = await authFetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            petNome,
-            raca: racaSelecionada,
-            tipoConsulta,
-            dataDaVacina,
-          }),
-        });
+      setMessage("Por favor, preencha todos os campos.");
+      return;
+    }
 
-        if (response.ok) {
-          setMessage("✅ Consulta cadastrada com sucesso!");
-          setPetNome("");
-          setRacaSelecionada("");
-          setTipoConsulta("");
-          setDataDaVacina("");
-          carregarConsultas();
-        } else {
-          const errData = await response.json();
-          setMessage(
-            `❌ Erro: ${errData.error || "Não foi possível cadastrar."}`,
-          );
-        }
-      } catch (error) {
-        setMessage("❌ Erro ao salvar no banco de dados.");
-      }
-    } else {
-      setMessage("⚠️ Por favor, preencha todos os campos.");
+    if (!userId) {
+      setMessage("Entre na sua conta para cadastrar uma consulta.");
+      return;
+    }
+
+    try {
+      const state = await loadOfflineState(userId);
+      const operationId = createOperationId();
+      const localId = `local:${operationId}`;
+
+      const novaConsulta = {
+        id: localId,
+        petNome: petNome.trim(),
+        raca: racaSelecionada,
+        tipoConsulta: tipoConsulta.trim(),
+        dataDaVacina: dataDaVacina.trim(),
+        applied: false,
+        syncStatus: "pending",
+      };
+
+      state.consultas.unshift(novaConsulta);
+
+      state.queue.push({
+        id: operationId,
+        type: "create",
+        localId,
+        data: {
+          petNome: novaConsulta.petNome,
+          raca: novaConsulta.raca,
+          tipoConsulta: novaConsulta.tipoConsulta,
+          dataDaVacina: novaConsulta.dataDaVacina,
+          applied: false,
+        },
+      });
+
+      await saveOfflineState(userId, state);
+      setVaccines(state.consultas.map(formatConsulta));
+
+      setPetNome("");
+      setRacaSelecionada("");
+      setTipoConsulta("");
+      setDataDaVacina("");
+
+      setMessage("Consulta salva no aparelho.");
+      setSyncMessage("Pendente de sincronização.");
+
+      const notificacao = await enviarNotificacaoLocal(
+        novaConsulta.petNome,
+        novaConsulta.tipoConsulta,
+      );
+
+      setMessage(
+        notificacao.success
+          ? "Consulta salva! Notificação enviada com sucesso."
+          : notificacao.message,
+      );
+
+      await sincronizarPendencias();
+    } catch (error) {
+      console.log("Erro ao salvar consulta:", error.message);
+      setMessage("Erro ao salvar a consulta no aparelho.");
     }
   };
 
@@ -222,7 +561,6 @@ export default function CadastroScreen() {
     <View style={dynamicStyles.container}>
       <ScrollView contentContainerStyle={styles.listContent}>
         <View style={styles.headerContainer}>
-          {/* Botão de Logout posicionado exatamente ACIMA do ajuste de acessibilidade */}
           <TouchableOpacity
             style={[styles.logoutButton, dynamicStyles.removeButton]}
             onPress={handleLogout}
@@ -323,6 +661,8 @@ export default function CadastroScreen() {
             </AText>
           )}
 
+          <AText style={styles.syncMessage}>{syncMessage}</AText>
+
           <AText accessibilityRole="header" style={styles.sectionTitle}>
             Vacinas e consultas
           </AText>
@@ -340,6 +680,8 @@ export default function CadastroScreen() {
             }}
             markApplied={markApplied}
             removeItem={removeItem}
+            resolverConflitoServidor={resolverConflitoServidor}
+            resolverConflitoLocal={resolverConflitoLocal}
           />
         ))}
       </ScrollView>
@@ -437,7 +779,11 @@ export default function CadastroScreen() {
 }
 
 const styles = StyleSheet.create({
-  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   loadingText: { marginTop: 10 },
   listContent: { padding: 20, paddingBottom: 40 },
   headerContainer: { marginBottom: 10 },
@@ -460,7 +806,11 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: "center",
   },
-  a11yButtonText: { color: "#FFFFFF", textAlign: "center", fontWeight: "bold" },
+  a11yButtonText: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
   title: {
     fontWeight: "bold",
     marginBottom: 15,
@@ -475,13 +825,21 @@ const styles = StyleSheet.create({
     minHeight: 48,
     justifyContent: "center",
   },
-  buttonText: { color: "#FFFFFF", textAlign: "center", fontWeight: "bold" },
+  buttonText: {
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontWeight: "bold",
+  },
   message: {
     marginTop: 20,
     padding: 12,
     textAlign: "center",
     borderWidth: 1,
     borderRadius: 6,
+  },
+  syncMessage: {
+    marginTop: 12,
+    textAlign: "center",
   },
   sectionTitle: {
     fontWeight: "bold",
