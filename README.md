@@ -1,107 +1,151 @@
-Laura Gomes da Fonseca 202312824
+# CaoVida 🐾
 
-<h1>🐾 Problema que o app pretende resolver</h1>
-Muitos tutores de pets têm dificuldades em organizar e acompanhar a saúde dos animais, como:
+Aplicativo mobile desenvolvido para auxiliar no gerenciamento de informações de cães permitindo organizar dados do pet como consultas e vacinas.
 
-Controle de vacinas aplicadas.
+## Versao Web
+https://cao-vida.vercel.app/
 
-Registro de consultas veterinárias.
+## 📱 Download do aplicativo
 
-
-Lembretes de datas importantes.
-
-Isso gera risco de esquecimento de vacinas ou atraso em consultas, impactando diretamente o bem-estar do pet.
-
-<h1>💡 Descrição da solução</h1>
-O CaoVida é um aplicativo simples e funcional que:
-
-Permite cadastrar nome do pet e data da consulta.
-
-Exibe uma lista de vacinas com interação (marcar como aplicada).
-
-Retorna feedback imediato ao usuário.
-
-Interface com identidade própria.
-
-<h1>⚙️ Tecnologias utilizadas</h1>
-React Native + Expo → para desenvolvimento híbrido e rápido.
-
-JavaScript → linguagem principal do app.
-
-Componentes nativos (ActivityIndicator, FlatList, Keyboard, StyleSheet, Text,TextInput, TouchableOpacity, View,) → para interface e interação.
-
-Hooks do React (useState, useEffect) → para gerenciar estados e adicionei um carregamento inicial de alguns segundos para iniciar o app.
-
-Estilização com StyleSheet → para identidade visual.
-
-Visualizar WEB: https://cao-vida.vercel.app/
-
-Download APK: https://expo.dev/artifacts/eas/2DEyRc-xRF9Yc6G4ny3N0IWcFGLJzEHdqPe6CcvUg24.apk
-
-<img width="400" height="920" alt="WhatsApp Image 2026-08-26 at 15 46 52" src="https://github.com/user-attachments/assets/297187e0-2b08-4057-869e-e9d096f863b9" 
-    /><img width="400" height="920" alt="WhatsApp Image 2026-08-26 at 15 46 51" src="https://github.com/user-attachments/assets/08faed47-7c7f-441a-9acf-490406a6ee31" />
-   
-<img width="400" height="920" alt="WhatsApp Image 2026-09-03 at 23 20 30" src="https://github.com/user-attachments/assets/014ccdb9-f152-4adc-8435-24a79d5102dd" />
-<img width="400" height="920" alt="WhatsApp Image 2026-09-03 at 23 20 30 (1)" src="https://github.com/user-attachments/assets/f6ee1876-1952-4a38-9982-191f064b138d" />
-
-<img width="400" height="920" alt="aa" src="https://github.com/user-attachments/assets/25df3e27-77e6-4565-9eba-9f5dfaeb6c1d" />
-<img width="400" height="920" alt="aaa" src="https://github.com/user-attachments/assets/85fafc5b-46e8-4ff3-921d-3638d244df2f" />
-
-<img width="960" height="457" alt="aaz" src="https://github.com/user-attachments/assets/7cb160a1-f278-4672-96d4-acc61a3cd2d4" />
-
-<img width="960" height="419" alt="1" src="https://github.com/user-attachments/assets/2b7f7f11-e937-4f44-b63a-2ffe5198d948" />
-<img width="960" height="419" alt="1" src="https://github.com/user-attachments/assets/1bbbfee3-9928-483a-8de2-7cc0fc74d6cd" />
-<img width="960" height="417" alt="2" src="https://github.com/user-attachments/assets/2e28b364-f4da-4cf0-a964-90b0cf7db5a3" />
-<img width="960" height="420" alt="3" src="https://github.com/user-attachments/assets/12a88cc1-9a26-4e05-ba51-b27557c1bd54" />
+**[Baixar CaoVida para Android (APK)](https://github.com/Laurarpgk0/CaoVida/releases/latest/download/CaoVida.apk)**
 
 
 
+## 📸 Telas do aplicativo
 
+### Aplicativo mobile
 
+<p align="center">
+  <img width="30%" src="https://github.com/user-attachments/assets/297187e0-2b08-4057-869e-e9d096f863b9" alt="Tela do CaoVida 1" />
+  <img width="30%" src="https://github.com/user-attachments/assets/08faed47-7c7f-441a-9acf-490406a6ee31" alt="Tela do CaoVida 2" />
+  <img width="30%" src="https://github.com/user-attachments/assets/014ccdb9-f152-4adc-8435-24a79d5102dd" alt="Tela do CaoVida 3" />
+</p>
 
-## Get started
+<p align="center">
+  <img width="30%" src="https://github.com/user-attachments/assets/f6ee1876-1952-4a38-9982-191f064b138d" alt="Tela do CaoVida 4" />
+  <img width="30%" src="https://github.com/user-attachments/assets/25df3e27-77e6-4565-9eba-9f5dfaeb6c1d" alt="Tela do CaoVida 5" />
+  <img width="30%" src="https://github.com/user-attachments/assets/85fafc5b-46e8-4ff3-921d-3638d244df2f" alt="Tela do CaoVida 6" />
+</p>
 
-1. Install dependencies
+### Outras telas e funcionalidades
 
-   ```bash
-   npm install
-   ```
+<p align="center">
+  <img width="85%" src="https://github.com/user-attachments/assets/7cb160a1-f278-4672-96d4-acc61a3cd2d4" alt="Visualização do CaoVida 1" />
+</p>
 
-2. Start the app
+<p align="center">
+  <img width="85%" src="https://github.com/user-attachments/assets/2b7f7f11-e937-4f44-b63a-2ffe5198d948" alt="Visualização do CaoVida 2" />
+</p>
 
-   ```bash
-   npx expo start
-   ```
+<p align="center">
+  <img width="85%" src="https://github.com/user-attachments/assets/1bbbfee3-9928-483a-8de2-7cc0fc74d6cd" alt="Visualização do CaoVida 3" />
+</p>
 
-In the output, you'll find options to open the app in a
+<p align="center">
+  <img width="85%" src="https://github.com/user-attachments/assets/2e28b364-f4da-4cf0-a964-90b0cf7db5a3" alt="Visualização do CaoVida 4" />
+</p>
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+<p align="center">
+  <img width="85%" src="https://github.com/user-attachments/assets/12a88cc1-9a26-4e05-ba51-b27557c1bd54" alt="Visualização do CaoVida 5" />
+</p>
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+### Versão executada no Android
 
-## Get a fresh project
+<p align="center">
+  <img width="30%" src="https://github.com/user-attachments/assets/01258b9d-f3ec-46b1-b04f-77b8f2085033" alt="CaoVida executado no Android 1" />
+  <img width="30%" src="https://github.com/user-attachments/assets/2ba0a4f1-64b1-4423-9340-23521eb8fb7c" alt="CaoVida executado no Android 2" />
+</p>
 
-When you're ready, run:
+## ✨ Funcionalidades
+
+- Cadastro e gerenciamento de usuários.
+- Cadastro e gerenciamento de pets.
+- Registro de consultas e vacinas.
+- Consulta às informações dos animais.
+- Notificações e lembretes.
+- Autenticação de usuários.
+- Autenticação biométrica.
+- Recursos de acessibilidade.
+- Armazenamento e sincronização de dados com o backend.
+- Funcionamento offline com sincronização posterior.
+
+## 🛠️ Tecnologias utilizadas
+
+- React Native
+- Expo SDK 54
+- JavaScript
+- Expo Router
+- Supabase
+- Node.js
+- Express
+- MongoDB
+- AsyncStorage
+
+## 🔗 Links do projeto
+
+- **Aplicativo:** https://github.com/Laurarpgk0/CaoVida
+- **Backend:** https://github.com/Laurarpgk0/caoVida-backend
+- **Versão web:** https://cao-vida.vercel.app/
+- **API:** https://caovida-backend.onrender.com
+
+## ⚙️ Como executar o projeto
+
+### Requisitos
+
+- Node.js instalado.
+- npm instalado.
+- Expo CLI utilizado por meio do `npx`.
+- Aplicativo Expo Go ou emulador Android para desenvolvimento.
+
+### Instalação
+
+Clone o repositório:
 
 ```bash
-npm run reset-project
+git clone https://github.com/Laurarpgk0/CaoVida.git
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Entre na pasta:
 
-## Learn more
+```bash
+cd CaoVida
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Instale as dependências:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+npm install
+```
 
-## Join the community
+Configure as variáveis de ambiente em um arquivo `.env` na raiz do projeto:
 
-Join our community of developers creating universal apps.
+```env
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+EXPO_PUBLIC_API_URL=
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Preencha as variáveis com as configurações correspondentes dos serviços utilizados. 
+
+Inicie o projeto:
+
+```bash
+npx expo start
+```
+
+## 📦 Geração do APK Android
+
+Para gerar uma versão de instalação Android em ambiente Windows:
+
+```powershell
+cd android
+.\gradlew :app:assembleRelease
+```
+
+O arquivo APK será gerado em:
+
+```text
+android/app/build/outputs/apk/release/app-release.apk
+```
+
+**CaoVida — Cuidado e organização para a vida dos pets.**
